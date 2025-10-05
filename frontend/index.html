@@ -16,7 +16,6 @@
     touch-action: none;
   }
 
-  /* Центрируем статус */
   .center-info {
     position: absolute;
     top: 50%;
@@ -36,7 +35,6 @@
     margin: 5px 0;
   }
 
-  /* Полупрозрачный фон для модального окна */
   #overlay {
     position: fixed;
     top: 0;
@@ -48,7 +46,6 @@
     z-index: 99;
   }
 
-  /* Панель модификаций */
   #modListContainer {
     position: fixed;
     bottom: -80%;
@@ -60,7 +57,7 @@
     border-top-right-radius: 20px;
     overflow-y: auto;
     transition: bottom 0.3s ease;
-    padding: 15px;
+    padding: 15px 15px 60px 15px; /* место для drag-area */
     box-sizing: border-box;
     z-index: 100;
   }
@@ -96,13 +93,23 @@
 
   .drag-area {
     position: absolute;
-    top: -30px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 60px;
-    height: 5px;
-    background: #666;
-    border-radius: 10px;
+    text-align: center;
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .drag-area span {
+    display: inline-block;
+    padding: 8px 20px;
+    background: #3a3a3a;
+    border-radius: 15px;
+    color: #bbb;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    user-select: none;
   }
 </style>
 </head>
@@ -114,8 +121,9 @@
 </div>
 
 <div id="overlay"></div>
+
 <div id="modListContainer">
-  <div class="drag-area"></div>
+  <div class="drag-area"><span>Протяните вверх для открытия списка модификаций</span></div>
 </div>
 
 <script>
@@ -176,7 +184,9 @@ function loadMods() {
   fetch('https://roblox-modss.vercel.app/backend/data.json')
     .then(res => res.json())
     .then(data => {
-      modListContainer.innerHTML = '<div class="drag-area"></div>'; // сохраняем drag
+      // сохраняем drag-area
+      const dragHTML = '<div class="drag-area"><span>Протяните вверх для открытия списка модификаций</span></div>';
+      modListContainer.innerHTML = dragHTML;
       data.forEach(mod => {
         const card = document.createElement('div');
         card.className = 'mod-card';
