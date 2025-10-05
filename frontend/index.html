@@ -106,15 +106,16 @@ const modListContainer = document.getElementById('modListContainer');
 let startY = 0;
 let currentBottom = 0;
 let dragging = false;
-const maxHeight = window.innerHeight * 0.8;
+const maxHeight = window.innerHeight * 0.8; // 80% экрана
 
-// Drag панель
+// Drag-панель
 dragArea.addEventListener('touchstart', e => {
   startY = e.touches[0].clientY;
   dragging = true;
   currentBottom = parseFloat(getComputedStyle(modListContainer).bottom) || -maxHeight;
   modListContainer.style.transition = 'none';
 });
+
 dragArea.addEventListener('touchmove', e => {
   if (!dragging) return;
   const touchY = e.touches[0].clientY;
@@ -123,26 +124,28 @@ dragArea.addEventListener('touchmove', e => {
   modListContainer.style.bottom = newBottom + 'px';
   e.preventDefault();
 }, {passive: false});
+
 dragArea.addEventListener('touchend', e => {
   if (!dragging) return;
   dragging = false;
   modListContainer.style.transition = 'bottom 0.3s ease';
   const bottomValue = parseFloat(modListContainer.style.bottom);
-  if (bottomValue > -maxHeight / 2) {
+  // Если тянули хотя бы на 20px вверх — раскрываем полностью
+  if (bottomValue > -maxHeight + 20) {
     modListContainer.style.bottom = '0';
   } else {
     modListContainer.style.bottom = -maxHeight + 'px';
   }
 });
 
-// Функция обновления статуса Roblox
+// Обновление статуса Roblox
 function updateInfo(found, version, modType) {
   document.getElementById('status').textContent = found ? "✅ Roblox найден" : "❌ Roblox не найден";
   document.getElementById('version').textContent = "Версия: " + (version || "—");
   document.getElementById('modType').textContent = "Модификация: " + (modType || "—");
 }
 
-// Загрузка модификаций из JSON
+// Загрузка модификаций
 function loadMods() {
   fetch('https://roblox-modss.vercel.app/backend/data.json')
     .then(res => res.json())
@@ -160,17 +163,15 @@ function loadMods() {
         modListContainer.appendChild(card);
       });
     })
-    .catch(err => {
-      console.error('Ошибка загрузки модификаций:', err);
-    });
+    .catch(err => console.error('Ошибка загрузки модификаций:', err));
 }
 
-// Получение данных от AndroidBridge
+// Получение данных из AndroidBridge
 if (window.AndroidBridge) {
-  AndroidBridge.getUserModType?.(type => {
-    updateInfo(true, AndroidBridge.getRobloxVersion?.() || '—', type);
-    loadMods();
-  });
+  const modType = AndroidBridge.getUserModType?.() || '—';
+  const robloxVersion = AndroidBridge.getRobloxVersion?.() || '—';
+  updateInfo(true, robloxVersion, modType);
+  loadMods();
 }
 </script>
 </body>
