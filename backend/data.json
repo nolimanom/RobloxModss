@@ -1,1 +1,12 @@
-test
+[
+  {
+    "name": "Mod Alpha",
+    "version": "1.0.0",
+    "upToDate": true
+  },
+  {
+    "name": "Mod Beta",
+    "version": "0.9.5",
+    "upToDate": false
+  }
+]
