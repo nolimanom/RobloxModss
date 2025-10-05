@@ -45,14 +45,14 @@ h1 {
 
 #modListContainer {
   position: fixed;
-  bottom: -80%;
+  bottom: 0;
   left:0; right:0;
-  height: 80%;
+  height: 0;
   background: #1e1e1e;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   overflow-y: auto;
-  transition: bottom 0.3s ease;
+  transition: height 0.3s ease;
   padding: 60px 15px 15px 15px;
   box-sizing: border-box;
   z-index: 100;
@@ -87,26 +87,23 @@ h1 {
   color: white;
 }
 
-.drag-area {
-  position: absolute;
-  top: 10px;
+#dragHandle {
+  position: fixed;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: auto;
-  text-align: center;
-  z-index: 101;
-  pointer-events: auto;
-}
-
-.drag-area span {
-  display: inline-block;
-  padding: 8px 20px;
+  width: 120px;
+  height: 30px;
   background: #3a3a3a;
-  border-radius: 15px;
+  border-radius: 15px 15px 0 0;
+  text-align: center;
+  line-height: 30px;
   color: #bbb;
+  font-weight: bold;
   font-size: 16px;
-  letter-spacing: 0.5px;
+  z-index: 101;
   user-select: none;
+  touch-action: none;
 }
 </style>
 </head>
@@ -120,51 +117,48 @@ h1 {
 
 <div id="overlay"></div>
 
-<div id="modListContainer">
-  <div class="drag-area"><span>⬆️ Протяните вверх для открытия списка модификаций</span></div>
-</div>
+<div id="modListContainer"></div>
+<div id="dragHandle">⬆️ Потяните вверх для модификаций</div>
 
 <script>
 const overlay = document.getElementById('overlay');
 const modListContainer = document.getElementById('modListContainer');
-const dragArea = modListContainer.querySelector('.drag-area');
-let startY = 0, currentBottom = 0, dragging = false;
+const dragHandle = document.getElementById('dragHandle');
+let startY = 0, startHeight = 0, dragging = false;
 const maxHeight = window.innerHeight * 0.8;
 
 // Drag
-dragArea.addEventListener('touchstart', e => {
+dragHandle.addEventListener('touchstart', e => {
   startY = e.touches[0].clientY;
+  startHeight = parseFloat(getComputedStyle(modListContainer).height);
   dragging = true;
-  currentBottom = parseFloat(getComputedStyle(modListContainer).bottom) || -maxHeight;
   modListContainer.style.transition = 'none';
   overlay.style.display = 'block';
 });
 
-dragArea.addEventListener('touchmove', e => {
+dragHandle.addEventListener('touchmove', e => {
   if(!dragging) return;
-  const touchY = e.touches[0].clientY;
-  let diff = startY - touchY;
-  let newBottom = Math.min(Math.max(currentBottom + diff, -maxHeight), 0);
-  modListContainer.style.bottom = newBottom + 'px';
+  const diff = startY - e.touches[0].clientY;
+  let newHeight = Math.min(Math.max(startHeight + diff, 0), maxHeight);
+  modListContainer.style.height = newHeight + 'px';
   e.preventDefault();
-}, {passive: false});
+}, {passive:false});
 
-dragArea.addEventListener('touchend', e => {
+dragHandle.addEventListener('touchend', e => {
   if(!dragging) return;
   dragging = false;
-  modListContainer.style.transition = 'bottom 0.3s ease';
-  const bottomValue = parseFloat(modListContainer.style.bottom);
-  if(bottomValue > -maxHeight + 20) {
-    modListContainer.style.bottom = '0';
-  } else {
-    modListContainer.style.bottom = -maxHeight + 'px';
+  modListContainer.style.transition = 'height 0.3s ease';
+  const h = parseFloat(modListContainer.style.height);
+  if(h > maxHeight / 2) modListContainer.style.height = maxHeight + 'px';
+  else {
+    modListContainer.style.height = '0';
     overlay.style.display = 'none';
   }
 });
 
 // Закрытие по клику на overlay
 overlay.addEventListener('click', () => {
-  modListContainer.style.bottom = -maxHeight + 'px';
+  modListContainer.style.height = '0';
   overlay.style.display = 'none';
 });
 
@@ -180,8 +174,7 @@ function loadMods() {
   fetch('https://roblox-modss.vercel.app/backend/data.json')
     .then(res => res.json())
     .then(data => {
-      const dragHTML = '<div class="drag-area"><span>⬆️ Протяните вверх для открытия списка модификаций</span></div>';
-      modListContainer.innerHTML = dragHTML;
+      modListContainer.innerHTML = '';
       data.forEach(mod => {
         const card = document.createElement('div');
         card.className = 'mod-card';
