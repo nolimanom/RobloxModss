@@ -67,18 +67,14 @@
   <div class="drag-area">Протяните вверх для открытия списка модификаций</div>
 
   <script>
-    // Получаем данные из AndroidBridge
+    // Функция для обновления данных от Android
     function updateInfo(found, version, modType) {
       document.getElementById('status').textContent = found ? "✅ Roblox найден" : "❌ Roblox не найден";
       document.getElementById('version').textContent = "Версия: " + (version || "—");
       document.getElementById('modType').textContent = "Модификация: " + (modType || "—");
     }
 
-    // Пример вызова из Android (добавишь через JS-интерфейс)
-    if (window.AndroidBridge && AndroidBridge.getModType) {
-      const type = AndroidBridge.getModType();
-      updateInfo(true, "2.624.562", type);
-    }
+    // Всё остальное теперь приходит напрямую из Android через evaluateJavascript
   </script>
 </body>
 </html>
