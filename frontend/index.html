@@ -15,42 +15,40 @@
     user-select: none;
     touch-action: none;
   }
+
+  /* Центрируем статус */
+  .center-info {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
   h1 {
     font-size: 28px;
     margin: 10px 0;
-    text-align: center;
   }
+
   .info {
     font-size: 18px;
     color: #ccc;
-    text-align: center;
     margin: 5px 0;
   }
-  .drag-area {
+
+  /* Полупрозрачный фон для модального окна */
+  #overlay {
     position: fixed;
-    bottom: 0;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 70px;
-    background: #3a3a3a;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #bbb;
-    font-size: 16px;
-    letter-spacing: 0.5px;
-    z-index: 100;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    display: none;
+    z-index: 99;
   }
-  .drag-area::before {
-    content: "";
-    position: absolute;
-    top: 10px;
-    width: 60px;
-    height: 5px;
-    border-radius: 10px;
-    background: #666;
-  }
+
+  /* Панель модификаций */
   #modListContainer {
     position: fixed;
     bottom: -80%;
@@ -64,7 +62,9 @@
     transition: bottom 0.3s ease;
     padding: 15px;
     box-sizing: border-box;
+    z-index: 100;
   }
+
   .mod-card {
     background: #2f2f2f;
     border-radius: 10px;
@@ -76,44 +76,64 @@
     font-size: 16px;
     color: #fff;
   }
+
   .mod-card .status {
     padding: 2px 8px;
     border-radius: 5px;
     font-size: 14px;
     font-weight: bold;
   }
+
   .status.up {
     background-color: #28a745;
     color: white;
   }
+
   .status.outdated {
     background-color: #dc3545;
     color: white;
   }
+
+  .drag-area {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 5px;
+    background: #666;
+    border-radius: 10px;
+  }
 </style>
 </head>
 <body>
-<h1 id="status">Проверка Roblox...</h1>
-<div class="info" id="version">Версия: —</div>
-<div class="info" id="modType">Модификация: —</div>
+<div class="center-info">
+  <h1 id="status">Проверка Roblox...</h1>
+  <div class="info" id="version">Версия: —</div>
+  <div class="info" id="modType">Модификация: —</div>
+</div>
 
-<div id="modListContainer"></div>
-<div class="drag-area">Протяните вверх для открытия списка модификаций</div>
+<div id="overlay"></div>
+<div id="modListContainer">
+  <div class="drag-area"></div>
+</div>
 
 <script>
-const dragArea = document.querySelector('.drag-area');
+const overlay = document.getElementById('overlay');
 const modListContainer = document.getElementById('modListContainer');
+const dragArea = modListContainer.querySelector('.drag-area');
 let startY = 0;
 let currentBottom = 0;
 let dragging = false;
-const maxHeight = window.innerHeight * 0.8; // 80% экрана
+const maxHeight = window.innerHeight * 0.8;
 
-// Drag-панель
+// Drag панели
 dragArea.addEventListener('touchstart', e => {
   startY = e.touches[0].clientY;
   dragging = true;
   currentBottom = parseFloat(getComputedStyle(modListContainer).bottom) || -maxHeight;
   modListContainer.style.transition = 'none';
+  overlay.style.display = 'block';
 });
 
 dragArea.addEventListener('touchmove', e => {
@@ -130,12 +150,18 @@ dragArea.addEventListener('touchend', e => {
   dragging = false;
   modListContainer.style.transition = 'bottom 0.3s ease';
   const bottomValue = parseFloat(modListContainer.style.bottom);
-  // Если тянули хотя бы на 20px вверх — раскрываем полностью
   if (bottomValue > -maxHeight + 20) {
     modListContainer.style.bottom = '0';
   } else {
     modListContainer.style.bottom = -maxHeight + 'px';
+    overlay.style.display = 'none';
   }
+});
+
+// Закрытие по клику на overlay
+overlay.addEventListener('click', () => {
+  modListContainer.style.bottom = -maxHeight + 'px';
+  overlay.style.display = 'none';
 });
 
 // Обновление статуса Roblox
@@ -150,7 +176,7 @@ function loadMods() {
   fetch('https://roblox-modss.vercel.app/backend/data.json')
     .then(res => res.json())
     .then(data => {
-      modListContainer.innerHTML = '';
+      modListContainer.innerHTML = '<div class="drag-area"></div>'; // сохраняем drag
       data.forEach(mod => {
         const card = document.createElement('div');
         card.className = 'mod-card';
@@ -170,7 +196,8 @@ function loadMods() {
 if (window.AndroidBridge) {
   const modType = AndroidBridge.getUserModType?.() || '—';
   const robloxVersion = AndroidBridge.getRobloxVersion?.() || '—';
-  updateInfo(true, robloxVersion, modType);
+  const installed = AndroidBridge.isRobloxInstalled?.() || true;
+  updateInfo(installed, robloxVersion, modType);
   loadMods();
 }
 </script>
