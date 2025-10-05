@@ -1,0 +1,28 @@
+<script>
+async function getRobloxInfo() {
+  if (typeof AndroidBridge === "undefined") {
+    document.getElementById("roblox-info").innerText = "❌ AndroidBridge недоступен";
+    return;
+  }
+
+  try {
+    const json = AndroidBridge.getRobloxInfo();
+    const data = JSON.parse(json);
+    const element = document.getElementById("roblox-info");
+
+    if (data.installed) {
+      element.innerHTML = `✅ Roblox установлен<br>Версия: <b>${data.version}</b>`;
+    } else {
+      element.innerHTML = `❌ Roblox не найден`;
+    }
+  } catch (e) {
+    document.getElementById("roblox-info").innerText = "Ошибка при получении данных.";
+  }
+}
+
+window.onload = getRobloxInfo;
+</script>
+
+<div id="roblox-info" style="font-size:18px;color:white;margin-top:30px;">
+  Загрузка информации...
+</div>
