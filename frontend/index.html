@@ -24,20 +24,11 @@ body {
   text-align: center;
 }
 
-h1 {
-  font-size: 28px;
-  margin: 10px 0;
-}
-
-.info {
-  font-size: 18px;
-  color: #ccc;
-  margin: 5px 0;
-}
+h1 { font-size: 28px; margin: 10px 0; }
+.info { font-size: 18px; color: #ccc; margin: 5px 0; }
 
 #overlay {
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
+  position: fixed; top:0; left:0; right:0; bottom:0;
   background: rgba(0,0,0,0.3);
   display: none;
   z-index: 99;
@@ -52,8 +43,8 @@ h1 {
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   overflow-y: auto;
-  transition: height 0.3s ease;
-  padding: 60px 15px 15px 15px;
+  transition: height 0.2s ease;
+  padding: 60px 15px 15px 15px; /* место для dragHandle */
   box-sizing: border-box;
   z-index: 100;
 }
@@ -77,27 +68,21 @@ h1 {
   font-weight: bold;
 }
 
-.status.up {
-  background-color: #28a745;
-  color: white;
-}
-
-.status.outdated {
-  background-color: #dc3545;
-  color: white;
-}
+.status.up { background-color: #28a745; color: white; }
+.status.outdated { background-color: #dc3545; color: white; }
 
 #dragHandle {
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 120px;
-  height: 30px;
+  width: 100%;
+  max-width: 300px;
+  height: 40px;
   background: #3a3a3a;
-  border-radius: 15px 15px 0 0;
+  border-radius: 20px 20px 0 0;
   text-align: center;
-  line-height: 30px;
+  line-height: 40px;
   color: #bbb;
   font-weight: bold;
   font-size: 16px;
@@ -116,49 +101,46 @@ h1 {
 </div>
 
 <div id="overlay"></div>
-
 <div id="modListContainer"></div>
 <div id="dragHandle">⬆️ Потяните вверх для модификаций</div>
 
 <script>
 const overlay = document.getElementById('overlay');
-const modListContainer = document.getElementById('modListContainer');
+const bottomSheet = document.getElementById('modListContainer');
 const dragHandle = document.getElementById('dragHandle');
-let startY = 0, startHeight = 0, dragging = false;
 const maxHeight = window.innerHeight * 0.8;
+
+let startY = 0;
+let dragging = false;
 
 // Drag
 dragHandle.addEventListener('touchstart', e => {
   startY = e.touches[0].clientY;
-  startHeight = parseFloat(getComputedStyle(modListContainer).height);
   dragging = true;
-  modListContainer.style.transition = 'none';
   overlay.style.display = 'block';
+  bottomSheet.style.transition = 'none';
 });
 
 dragHandle.addEventListener('touchmove', e => {
   if(!dragging) return;
   const diff = startY - e.touches[0].clientY;
-  let newHeight = Math.min(Math.max(startHeight + diff, 0), maxHeight);
-  modListContainer.style.height = newHeight + 'px';
+  if(diff >= 20) {
+    bottomSheet.style.height = maxHeight + 'px'; // сразу раскрытие
+  }
   e.preventDefault();
 }, {passive:false});
 
 dragHandle.addEventListener('touchend', e => {
-  if(!dragging) return;
   dragging = false;
-  modListContainer.style.transition = 'height 0.3s ease';
-  const h = parseFloat(modListContainer.style.height);
-  if(h > maxHeight / 2) modListContainer.style.height = maxHeight + 'px';
-  else {
-    modListContainer.style.height = '0';
-    overlay.style.display = 'none';
+  bottomSheet.style.transition = 'height 0.2s ease';
+  if(parseFloat(bottomSheet.style.height) < maxHeight) {
+    bottomSheet.style.height = maxHeight + 'px';
   }
 });
 
 // Закрытие по клику на overlay
 overlay.addEventListener('click', () => {
-  modListContainer.style.height = '0';
+  bottomSheet.style.height = '0';
   overlay.style.display = 'none';
 });
 
@@ -174,7 +156,7 @@ function loadMods() {
   fetch('https://roblox-modss.vercel.app/backend/data.json')
     .then(res => res.json())
     .then(data => {
-      modListContainer.innerHTML = '';
+      bottomSheet.innerHTML = '';
       data.forEach(mod => {
         const card = document.createElement('div');
         card.className = 'mod-card';
@@ -184,20 +166,20 @@ function loadMods() {
             ${mod.upToDate ? 'Обновлено' : 'Устарело'}
           </span>
         `;
-        modListContainer.appendChild(card);
+        bottomSheet.appendChild(card);
       });
     })
     .catch(err => console.error(err));
 }
 
-// AndroidBridge
-async function initFromAndroid() {
+// Получение данных с AndroidBridge
+function initFromAndroid() {
   if(window.AndroidBridge) {
     let modType = '—', robloxVersion = '—', installed = false;
     try {
-      modType = await AndroidBridge.getUserModType();
-      robloxVersion = await AndroidBridge.getRobloxVersion();
-      installed = await AndroidBridge.isRobloxInstalled();
+      modType = AndroidBridge.getUserModType?.() || '—';
+      robloxVersion = AndroidBridge.getRobloxVersion?.() || '—';
+      installed = AndroidBridge.isRobloxInstalled?.() || false;
     } catch(e) {}
     updateInfo(installed, robloxVersion, modType);
   }
