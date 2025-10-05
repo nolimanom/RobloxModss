@@ -14,7 +14,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       height: 100vh;
       overflow: hidden;
       user-select: none;
@@ -23,7 +23,7 @@
 
     h1 {
       font-size: 28px;
-      margin: 10px 0;
+      margin: 20px 0 10px 0;
     }
 
     .info {
@@ -46,6 +46,8 @@
       color: #bbb;
       font-size: 16px;
       letter-spacing: 0.5px;
+      z-index: 100;
+      touch-action: none;
     }
 
     .drag-area::before {
@@ -57,6 +59,34 @@
       border-radius: 10px;
       background: #666;
     }
+
+    .mod-list {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      width: 100%;
+      max-height: 80%;
+      background: #3a3a3a;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: bottom 0.3s ease-in-out;
+      z-index: 99;
+    }
+
+    .mod-card {
+      background: #4a4a4a;
+      padding: 10px;
+      border-radius: 12px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -66,15 +96,50 @@
 
   <div class="drag-area">Протяните вверх для открытия списка модификаций</div>
 
+  <div class="mod-list" id="modList"></div>
+
   <script>
-    // Функция для обновления данных от Android
+    // Обновление данных от Android
     function updateInfo(found, version, modType) {
       document.getElementById('status').textContent = found ? "✅ Roblox найден" : "❌ Roblox не найден";
       document.getElementById('version').textContent = "Версия: " + (version || "—");
       document.getElementById('modType').textContent = "Модификация: " + (modType || "—");
     }
 
-    // Всё остальное теперь приходит напрямую из Android через evaluateJavascript
+    const dragArea = document.querySelector('.drag-area');
+    const modList = document.getElementById('modList');
+    let startY = 0;
+    let dragged = false;
+
+    dragArea.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+      dragged = false;
+    });
+
+    dragArea.addEventListener('touchmove', e => {
+      const diff = startY - e.touches[0].clientY;
+      if (diff > 10) dragged = true;
+    });
+
+    dragArea.addEventListener('touchend', () => {
+      if (dragged) openModList();
+    });
+
+    function openModList() {
+      modList.style.bottom = '0';
+      fetch('https://roblox-modss.vercel.app/backend/data.json')
+        .then(res => res.json())
+        .then(data => {
+          modList.innerHTML = ''; // очистка
+          data.mods.forEach(mod => {
+            const card = document.createElement('div');
+            card.className = 'mod-card';
+            card.innerHTML = `<span>${mod.name}</span><span>${mod.version} | ${mod.upToDate ? '✅' : '❌'}</span>`;
+            modList.appendChild(card);
+          });
+        })
+        .catch(err => console.error(err));
+    }
   </script>
 </body>
 </html>
